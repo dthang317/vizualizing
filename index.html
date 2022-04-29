@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="http://d3js.org/topojson.v1.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script> -->
+    <title>Project</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital@1&display=swap');
+
+        *{
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        svg{
+            min-width: 950px;
+        }
+        #space{
+            margin-left: 20px;
+        }
+        #canvas{
+            min-height: 600px;
+            min-width: 700 px;
+        }
+
+        .county:hover{
+            fill: black
+        }
+
+        #tooltip{
+            color: #000000;
+            font-size: 20px;
+        }
+        body {
+            font-size: large;
+            margin:250px;
+            margin-top:auto;
+            margin-bottom: auto;
+            background-color: rgb(246, 241, 241);
+        }
+        
+    </style>
+</head>
+<body>
+    
+      
+    <h2>Visualizing Information Project</h2>
+    <p> Percentage of adults who are 25 and older with bachelor's degree and higher degree. The data is from USDA Economic Reserach Service (2015 - 2019)</p>
+
+    <button onclick="window.location.href='https://docs.google.com/document/d/1OoUT3cyQEkUyLQKVdrVTJJ0sSOzBx2896OuPhcHFx_0/edit?usp=sharing';">
+       View Documentation
+      </button>
+    <button onclick="window.location.href='https://youtu.be/gnWUdfh3Z0k';">
+        View Youtube
+    </button>
+    <button onclick="window.location.href='https://www.ers.usda.gov/data-products/county-level-data-sets/download-data.aspx';">
+        Source Data
+       </button>
+    <br>
+    <br>
+    
+    <div id="tooltip"></div>
+    <svg id='canvas'></svg>
+    <svg id="space">
+        <g>
+            <rect x="10" y="0" width="40" height="40" fill=#e9a3c9></rect>
+            <text x="60" y="20" fill="black">Less than 15%</text>
+        </g>
+        <g>
+            <rect x="230" y="0" width="40" height="40" fill="#ffffbf"></rect>
+            <text x="280" y="20" fill="black">15% to 30%</text>
+        </g>
+        <g>
+            <rect x="410" y="0" width="40" height="40" fill="#a1d76a"></rect>
+            <text x="460" y="20" fill="black">30% to 45%</text>
+        </g>
+        <g>
+            <rect x="600" y="0" width="40" height="40" fill="#E61E10"></rect>
+            <text x="650" y="20" fill="black">More than 45%</text>
+        </g>
+    </svg>
+</body>
+<script>
+    let countyURL = 'https://cdn.freecodecamp.org/testable-projects-fcc/data/choropleth_map/counties.json'
+let educationURL = 'https://cdn.freecodecamp.org/testable-projects-fcc/data/choropleth_map/for_user_education.json'
+
+let countyData
+let educationData
+
+let canvas = d3.select('#canvas')
+let tooltip = d3.select('#tooltip')
+
+let drawMap = () => {
+ 
+    canvas.selectAll('path')
+            .data(countyData)
+            .enter()
+            .append('path')
+            .attr('d', d3.geoPath())
+            .attr('class', 'county')
+            .attr('fill', (countyDataItem) => {
+                let id = countyDataItem['id']
+                let county = educationData.find((item) => {
+                    return item['fips'] === id
+                })
+                let percentage = county['bachelorsOrHigher']
+                if(percentage <= 15){
+                    return '#e9a3c9'
+                }else if(percentage <= 30){
+                    return '#ffffbf'
+                }else if(percentage <= 45){
+                    return '#a1d76a'
+                }else{
+                    return '#E61E10'
+                }
+            })
+            .attr('data-fips', (countyDataItem) => {
+                return countyDataItem['id']
+            })
+            .attr('data-education', (countyDataItem) => {
+                let id = countyDataItem['id']
+                let county = educationData.find((item) => {
+                    return item['fips'] === id
+                })
+                let percentage = county['bachelorsOrHigher']
+                return percentage
+            })
+            .on('mouseover', (countyDataItem)=> {
+                tooltip.transition()
+                    .style('visibility', 'visible')
+
+                let id = countyDataItem['id']
+                let county = educationData.find((item) => {
+                    return item['fips'] === id
+                })
+
+                tooltip.text(county['area_name'] + ', ' + 
+                    county['state'] + ' - ' + county['bachelorsOrHigher'] + '%')
+
+                tooltip.attr('data-education', county['bachelorsOrHigher'] )
+            })
+            .on('mouseout', (countyDataItem) => {
+                tooltip.transition()
+                    .style('visibility', 'hidden')
+            })
+}
+
+d3.json(countyURL).then(
+    (data, error) => {
+        if(error){
+            console.log(log)
+        }else{
+            countyData = topojson.feature(data, data.objects.counties).features
+            console.log(countyData)
+
+            d3.json(educationURL).then(
+                (data, error) => {
+                    if(error){
+                        console.log(error)
+                    }else{
+                        educationData = data
+                        console.log(educationData)
+                        drawMap()
+                    }
+                }
+            )
+        }
+    }
+)
+</script>
+</html>
